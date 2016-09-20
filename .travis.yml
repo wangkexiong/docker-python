@@ -1,0 +1,34 @@
+language: c
+
+env:
+  global:
+    - COMMIT=${TRAVIS_COMMIT::8}
+
+services:
+  - docker
+
+before_install:
+  - BR_VER=`cat "rootfs/config" | grep "Buildroot.*Configuration" | awk '{print $3}'`
+  - BD_BASE=$PWD
+  - cd /opt
+  - wget -qO- "https://buildroot.org/downloads/buildroot-$BR_VER.tar.gz" | tar xz
+  - cp "$BD_BASE/rootfs/config" "buildroot-$BR_VER/.config"
+  - cd "buildroot-$BR_VER"
+  - make oldconfig
+  - make --quiet
+  - cp output/images/rootfs.tar $BD_BASE/.
+  - cd $BD_BASE
+  - ls -al rootfs.tar
+  - export REPO=wangkexiong/python
+
+install:
+  - docker build -t $REPO:$COMMIT .
+
+script:
+  - docker run -t $REPO:$COMMIT opkg-install python
+
+after_success:
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+  - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH; fi`
+  - docker tag $REPO:$COMMIT $REPO:$TAG
+  - docker push $REPO:$TAG
