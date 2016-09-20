@@ -25,7 +25,7 @@ install:
   - docker build -t $REPO:$COMMIT .
 
 script:
-  - docker run -t $REPO:$COMMIT opkg-install python
+  - docker run -t $REPO:$COMMIT python --version
 
 after_success:
   - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
